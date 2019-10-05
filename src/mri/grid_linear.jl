@@ -1,6 +1,5 @@
 export mri_grid_linear
 
-
 using Interpolations
 using FFTW
 using NFFT
@@ -25,26 +24,27 @@ using NFFT
     #| Copyright 2019-10-01; Jeff Fessler; University of Michigan
 function mri_grid_linear(kspace, ydata, N, fov)
     
-    # TODO: figure out if error handling is necessary
     # if nargin .== 1 && streq[kspace, "test"], mri_grid_linear_test, return end
     # if nargin .< 4, help(mfilename), error(' ') end
-    
-    if length(N) .== 1, N = [N N]; end
+    if ARGS .== 1 && kspace == "test", mri_grid_linear_test return end
+    if ARGS .< 4, error(' ') end
+
+    if length(N) .== 1, N = [N N] end
     if length(N) ~= 2, error "bad N" end
     if length(fov) .== 1, fov = [fov fov] end
     if length(fov) ~= 2, error "bad fov" end
 
     kg = zeros(2)
-    kg[1] = [-N[1]/2:N[1]/2-1]/fov[1]
-    kg[2] = [-N[2]/2:N[2]/2-1]/fov[2]
+    kg[1] = [-N[1] / 2 : N[1] / 2 - 1] / fov[1]
+    kg[2] = [-N[2] / 2 : N[2] / 2 - 1] / fov[2]
     k1gg = (i for i in kg[1], j in kg[2])
     k2gg = (j for i in kg[1], j in kg[2])
     yhat = interpolate(kspace[:,1], kspace[:,2], ydata, k1gg, k2gg, "linear")
     yhat[isnan(yhat)] = 0
     
     xg = zeros(2)
-    xg[1] = [-N[1]/2:N[1]/2-1]'/N[1] * fov[1]
-    xg[2] = [-N[2]/2:N[2]/2-1]'/N[2] * fov[2]
+    xg[1] = [-N[1] / 2 : N[1] / 2 - 1]' / N[1] * fov[1]
+    xg[2] = [-N[2] / 2:N[2] / 2 - 1]' / N[2] * fov[2]
     dk = 1 ./ fov
     xhat = fftshift(ifft(fftshift(yhat))) * prod(dk) * prod(N)
     tmp1 = nfft[xg[1] / fov[1]]
@@ -61,11 +61,11 @@ function mri_grid_linear_test
     fov = 256; # [mm] typical brain FOV
     N0 = 64; # nominal image size()
     
-    t = range(0, N0/2*2*pi, length = N0^2)'; # crude spiral:
-    kspace = N0/2*(1/fov)*[cos(t) sin(t)] .* (t[:,[1 1]] / maximum(t))
+    t = range(0, N0 /  2 * 2 * pi, length = N0 ^ 2)'; # crude spiral:
+    kspace = N0 / 2 * (1 / fov) * [cos(t) sin(t)] .* (t[:, [1 1]] / maximum(t))
     
     Ndisp = 256; # display images like this...
-    x1d = [-Ndisp/2:Ndisp/2-1] / Ndisp * fov
+    x1d = [-Ndisp / 2 : Ndisp / 2 - 1] / Ndisp * fov
     x1dd = (i for i in x1d, j in x1d)
     x2dd = (j for i in x1d, j in x1d)
 
