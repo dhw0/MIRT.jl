@@ -24,18 +24,24 @@ using Interpolations
 function mri_grid_linear(kspace, ydata, N, fov)
     
     # TODO: figure out if error handling is necessary
-    if nargin .== 1 && streq[kspace, "test"], mri_grid_linear_test, return, end
-    if nargin .< 4, help(mfilename), error(' '), end
+    # if nargin .== 1 && streq[kspace, "test"], mri_grid_linear_test, return end
+    # if nargin .< 4, help(mfilename), error(' ') end
     
-    if length(N) .== 1, N = [N N];, end
-    if length(N) ~= 2, error "bad N", end
-    if length(fov) .== 1, fov = [fov fov];, end
-    if length(fov) ~= 2, error "bad fov", end
-    
-    kg[1] = [-N[1]/2:N[1]/2-1]/fov[1]
-    kg[2] = [-N[2]/2:N[2]/2-1]/fov[2]
-    [k1gg, k2gg] = ndgrid(kg(1}, kg{2))
-    yhat = griddata(kspace[:,1], kspace[:,2], ydata, k1gg, k2gg, "linear")
+    if length(N) .== 1, N = [N N]; end
+    if length(N) ~= 2, error "bad N" end
+    if length(fov) .== 1, fov = [fov fov] end
+    if length(fov) ~= 2, error "bad fov" end
+
+    kg1 = [-N[1]/2:N[1]/2-1]/fov[1]
+    kg2 = [-N[2]/2:N[2]/2-1]/fov[2]
+
+    # Fit = interpolate((kg1,kg2),Gridded(Linear()))
+    # fitted = [Fit[i,j] for i in kg1, j in kg2]
+    # captures ndgrid functionality?
+    k1gg = Float64[i for i in kg1, j in kg2]
+    k2gg = Float64[j for i in kg1, j in kg2]
+
+    yhat = interpolate(kspace[:,1], kspace[:,2], ydata, k1gg, k2gg, "linear")
     yhat[isnan(yhat)] = 0
     
     xg[1] = [-N[1]/2:N[1]/2-1]'/N[1] * fov[1]
