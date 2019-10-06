@@ -3,6 +3,10 @@ export mri_grid_linear
 using Interpolations
 using FFTW
 using NFFT
+#=
+using nufft
+using nufft_plots
+using nufft_init=#
 
 #function [xhat, yhat, xg, yg] = mri_grid_linear(kspace, ydata, N, fov)
     #|function [xhat, yhat, xg, kg] = mri_grid_linear(kspace, ydata, N, fov)
@@ -26,13 +30,24 @@ function mri_grid_linear(kspace, ydata, N, fov)
     
     # if nargin .== 1 && streq[kspace, "test"], mri_grid_linear_test, return end
     # if nargin .< 4, help(mfilename), error(' ') end
-    if ARGS .== 1 && kspace == "test", mri_grid_linear_test return end
-    if ARGS .< 4, error(' ') end
+    #=
+    if length(ARGS) .< 4 
+        error("Needs 4 arguments")
+    end
+    =#
 
-    if length(N) .== 1, N = [N N] end
-    if length(N) ~= 2, error "bad N" end
-    if length(fov) .== 1, fov = [fov fov] end
-    if length(fov) ~= 2, error "bad fov" end
+    if length(N) .== 1
+         N = [N N] 
+    end
+    if length(N) ~= 2
+        error("bad N")
+    end
+    if length(fov) .== 1
+        fov = [fov fov] 
+    end
+    if length(fov) ~= 2 
+        error("bad fov")
+    end 
 
     kg = zeros(2)
     kg[1] = [-N[1] / 2 : N[1] / 2 - 1] / fov[1]
@@ -47,7 +62,7 @@ function mri_grid_linear(kspace, ydata, N, fov)
     xg[2] = [-N[2] / 2:N[2] / 2 - 1]' / N[2] * fov[2]
     dk = 1 ./ fov
     xhat = fftshift(ifft(fftshift(yhat))) * prod(dk) * prod(N)
-    tmp1 = nfft[xg[1] / fov[1]]
+    tmp1 = nfft[xg[1] / fov[1]] # figure out how to include nufft
     tmp2 = nfft[xg[2] / fov[2]]
     xhat = xhat ./ (tmp1 * tmp2'); # gridding post-correction for linear interp
     return xhat, yhat, xg, kg
@@ -56,12 +71,11 @@ end
     #
     # test function
     #
-function mri_grid_linear_test
+function mri_grid_linear(test)
+    fov = 256 # [mm] typical brain FOV
+    N0 = 64 # nominal image size()
     
-    fov = 256; # [mm] typical brain FOV
-    N0 = 64; # nominal image size()
-    
-    t = range(0, N0 /  2 * 2 * pi, length = N0 ^ 2)'; # crude spiral:
+    t = LinRange(0, N0 /  2 * 2 * pi, N0 ^ 2)'; # crude spiral:
     kspace = N0 / 2 * (1 / fov) * [cos(t) sin(t)] .* (t[:, [1 1]] / maximum(t))
     
     Ndisp = 256; # display images like this...
@@ -84,6 +98,5 @@ function mri_grid_linear_test
     
     im[2, kg[1], kg[2], abs(yhat), "|y_{grid]|"], cbar
     im[3, xg[1], xg[2], abs(xhat), "|x| \"gridding\"", clim], cbar
-    =#
-    
+    =#  
 end
