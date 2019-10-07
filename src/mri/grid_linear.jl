@@ -61,15 +61,15 @@ end
     # test function
     #
 function mri_grid_linear(test::Symbol)
-    if (test != "test")
-        error("argument must be \"test\" if only one argument is specified")
+    if (test != :test)
+        error("argument must be \":test\" if only one argument is specified")
     end
 
     fov = 256 # [mm] typical brain FOV
     N0 = 64 # nominal image size()
     
     t = collect(range(0, stop = N0 / 2 * 2 * pi, length = N0 ^ 2))' # crude spiral:
-    kspace = N0 / 2 * (1 / fov) * [cos.(t) * sin.(t)] .* (t[:, [1 1]] / maximum(t))
+    kspace = N0 / 2 * (1 / fov) * [cos.(t) sin.(t)] .* (t[:, [1 1]] / maximum(t))
     
     Ndisp = 256; # display images like this...
     x1d = [-Ndisp / 2 : Ndisp / 2 - 1] / Ndisp * fov
