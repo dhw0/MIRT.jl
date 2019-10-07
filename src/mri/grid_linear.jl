@@ -3,10 +3,7 @@ export mri_grid_linear
 using Interpolations
 using FFTW
 using NFFT
-#=
-using nufft
-using nufft_plots
-using nufft_init=#
+using MIRT:nufft
 
 #function [xhat, yhat, xg, yg] = mri_grid_linear(kspace, ydata, N, fov)
     #|function [xhat, yhat, xg, kg] = mri_grid_linear(kspace, ydata, N, fov)
@@ -27,14 +24,6 @@ using nufft_init=#
     #|
     #| Copyright 2019-10-01; Jeff Fessler; University of Michigan
 function mri_grid_linear(kspace, ydata, N, fov)
-    
-    # if nargin .== 1 && streq[kspace, "test"], mri_grid_linear_test, return end
-    # if nargin .< 4, help(mfilename), error(' ') end
-    #=
-    if length(ARGS) .< 4 
-        error("Needs 4 arguments")
-    end
-    =#
 
     if length(N) .== 1
          N = [N N] 
@@ -62,8 +51,8 @@ function mri_grid_linear(kspace, ydata, N, fov)
     xg[2] = [-N[2] / 2:N[2] / 2 - 1]' / N[2] * fov[2]
     dk = 1 ./ fov
     xhat = fftshift(ifft(fftshift(yhat))) * prod(dk) * prod(N)
-    tmp1 = nfft[xg[1] / fov[1]] # figure out how to include nufft
-    tmp2 = nfft[xg[2] / fov[2]]
+    tmp1 = nufft[xg[1] / fov[1]] # figure out how to include nufft
+    tmp2 = nufft[xg[2] / fov[2]]
     xhat = xhat ./ (tmp1 * tmp2'); # gridding post-correction for linear interp
     return xhat, yhat, xg, kg
 end
@@ -71,12 +60,16 @@ end
     #
     # test function
     #
-function mri_grid_linear(test)
+function mri_grid_linear(test::Symbol)
+    if (test != "test")
+        error("argument must be \"test\" if only one argument is specified")
+    end
+
     fov = 256 # [mm] typical brain FOV
     N0 = 64 # nominal image size()
     
-    t = LinRange(0, N0 /  2 * 2 * pi, N0 ^ 2)'; # crude spiral:
-    kspace = N0 / 2 * (1 / fov) * [cos(t) sin(t)] .* (t[:, [1 1]] / maximum(t))
+    t = collect(range(0, stop = N0 / 2 * 2 * pi, length = N0 ^ 2))' # crude spiral:
+    kspace = N0 / 2 * (1 / fov) * [cos.(t) * sin.(t)] .* (t[:, [1 1]] / maximum(t))
     
     Ndisp = 256; # display images like this...
     x1d = [-Ndisp / 2 : Ndisp / 2 - 1] / Ndisp * fov
