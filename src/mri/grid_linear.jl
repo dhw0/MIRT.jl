@@ -4,25 +4,27 @@ using Interpolations
 using FFTW
 using NFFT
 using MIRT:nufft
+include("mri_objects.jl")
 
-#function [xhat, yhat, xg, yg] = mri_grid_linear(kspace, ydata, N, fov)
-    #|function [xhat, yhat, xg, kg] = mri_grid_linear(kspace, ydata, N, fov)
-    #| very crude "gridding" based on linear interpolation.
-    #| not recommended as anything but a straw man | perhaps
-    #| for initializing iterative methods.
-    #| in
-    #|	kspace		[M 2]	kx & ky k-space sample locations
-    #|	ydata		[M 1]	complex Fourier sample values
-    #|	N			desired image size()
-    #|	fov			field of view()
-    #|		kspace & fov must be in reciprocal units!
-    #| out
-    #|	xhat		[N N]	image estimate
-    #|	yhat		[N N]	gridding k-space data
-    #|	xg	([N1, 1], [N2, 1])	object-space uniform sample locations
-    #|	kg	([N1, 1], [N2, 1])	k-space uniform sample locations in 1d
-    #|
-    #| Copyright 2019-10-01; Jeff Fessler; University of Michigan
+#=
+function  mri_grid_linear(kspace, ydata, N, fov)
+ very crude "gridding" based on linear interpolation.
+ not recommended as anything but a straw man | perhaps
+ for initializing iterative methods.
+ in
+	kspace		[M 2]	kx & ky k-space sample locations
+	ydata		[M 1]	complex Fourier sample values
+	N			desired image size()
+	fov			field of view()
+		kspace & fov must be in reciprocal units!
+ out
+	xhat		[N N]	image estimate
+	yhat		[N N]	gridding k-space data
+	xg	([N1, 1], [N2, 1])	object-space uniform sample locations
+	kg	([N1, 1], [N2, 1])	k-space uniform sample locations in 1d
+
+Copyright 2019-10-01; Jeff Fessler; University of Michigan
+=#
 function mri_grid_linear(kspace, ydata, N, fov)
 
     if length(N) .== 1
@@ -41,9 +43,11 @@ function mri_grid_linear(kspace, ydata, N, fov)
     kg = zeros(2)
     kg[1] = [-N[1] / 2 : N[1] / 2 - 1] / fov[1]
     kg[2] = [-N[2] / 2 : N[2] / 2 - 1] / fov[2]
-    k1gg = (i for i in kg[1], j in kg[2])
-    k2gg = (j for i in kg[1], j in kg[2])
-    yhat = interpolate(kspace[:,1], kspace[:,2], ydata, k1gg, k2gg, "linear")
+    k1gg = collect(i for i in kg[1], j in kg[2])
+    k2gg = collect(j for i in kg[1], j in kg[2])
+    knots = (k1gg, k2gg)
+    A = (kspace[:,1], kspace{:,2})
+    yhat = interpolate(knots, A, Gridded(Linear))
     yhat[isnan(yhat)] = 0
     
     xg = zeros(2)
@@ -73,8 +77,8 @@ function mri_grid_linear(test::Symbol)
     
     Ndisp = 256; # display images like this...
     x1d = [-Ndisp / 2 : Ndisp / 2 - 1] / Ndisp * fov
-    x1dd = (i for i in x1d, j in x1d)
-    x2dd = (j for i in x1d, j in x1d)
+    x1dd = collect(i for i in x1d, j in x1d)
+    x2dd = collect(j for i in x1d, j in x1d)
 
     # TODO: find what mri_objects does
     #=
@@ -91,5 +95,5 @@ function mri_grid_linear(test::Symbol)
     
     im[2, kg[1], kg[2], abs(yhat), "|y_{grid]|"], cbar
     im[3, xg[1], xg[2], abs(xhat), "|x| \"gridding\"", clim], cbar
-    =#  
+    =#
 end
