@@ -52,11 +52,12 @@ function mri_grid_linear(kspace, ydata, N, fov)
     kg = zeros(2)
     kg[1] = [-N[1] / 2 : N[1] / 2 - 1] / fov[1]
     kg[2] = [-N[2] / 2 : N[2] / 2 - 1] / fov[2]
-    k1gg = collect(i for i in kg[1], j in kg[2])
-    k2gg = collect(j for i in kg[1], j in kg[2])
+    k1gg = [i for i in kg[1], j in kg[2]]
+    k2gg = [j for i in kg[1], j in kg[2]]
+    # need to put into one array http://juliamath.github.io/Interpolations.jl/latest/control/#Gridded-interpolation-1
     knots = (k1gg, k2gg)
     A = (kspace[:,1], kspace{:,2})
-    yhat = interpolate(knots, A, Gridded(Linear()))
+    yhat = interpolate(knots, A, Gridded(Linear())) 
     yhat[isnan(yhat)] = 0
     
     xg = zeros(2)
@@ -81,13 +82,13 @@ function mri_grid_linear(test::Symbol)
     fov = 256 # [mm] typical brain FOV
     N0 = 64 # nominal image size()
     
-    t = collect(range(0, stop = N0 / 2 * 2 * pi, length = N0 ^ 2))' # crude spiral:
-    kspace = N0 / 2 * (1 / fov) * [cos.(t) sin.(t)] .* (t[:, [1 1]] / maximum(t))
+    t = range(0, stop = N0 / 2 * 2 * pi, length = N0 ^ 2) # crude spiral:
+    kspace = N0 / 2 * (1 / fov) * [cos.(t) sin.(t)] .* (t[:, 1] / maximum(t))
     
     Ndisp = 256; # display images like this...
-    x1d = [-Ndisp / 2 : Ndisp / 2 - 1] / Ndisp * fov
-    x1dd = collect(i for i in x1d, j in x1d)
-    x2dd = collect(j for i in x1d, j in x1d)
+    x1d = (-Ndisp / 2 : Ndisp / 2 - 1) / Ndisp * fov
+    x1dd = [i for i in x1d, j in x1d]
+    x2dd = [j for i in x1d, j in x1d]
 
     # TODO: find what mri_objects does
     #=
