@@ -1,3 +1,12 @@
+#=
+    Project:      MIRTdev
+    File:         grid_linear.jl
+    Description:  Crude "gridding" based on linear interpolation
+    Author:       Daniel Wan
+    Date Created: 2019-10-01
+    Date Updated: 2019-10-09
+=#
+
 export mri_grid_linear
 
 using Interpolations
@@ -47,7 +56,7 @@ function mri_grid_linear(kspace, ydata, N, fov)
     k2gg = collect(j for i in kg[1], j in kg[2])
     knots = (k1gg, k2gg)
     A = (kspace[:,1], kspace{:,2})
-    yhat = interpolate(knots, A, Gridded(Linear))
+    yhat = interpolate(knots, A, Gridded(Linear()))
     yhat[isnan(yhat)] = 0
     
     xg = zeros(2)
@@ -55,7 +64,7 @@ function mri_grid_linear(kspace, ydata, N, fov)
     xg[2] = [-N[2] / 2:N[2] / 2 - 1]' / N[2] * fov[2]
     dk = 1 ./ fov
     xhat = fftshift(ifft(fftshift(yhat))) * prod(dk) * prod(N)
-    tmp1 = nufft[xg[1] / fov[1]] # figure out how to include nufft
+    tmp1 = nufft[xg[1] / fov[1]]
     tmp2 = nufft[xg[2] / fov[2]]
     xhat = xhat ./ (tmp1 * tmp2'); # gridding post-correction for linear interp
     return xhat, yhat, xg, kg
