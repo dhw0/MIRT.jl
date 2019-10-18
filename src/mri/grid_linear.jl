@@ -42,13 +42,13 @@ function mri_grid_linear(kspace, ydata, N, fov)
     length(fov) == 2 || error("bad fov")
 
     kg = (-N[1] / 2 : N[1] / 2 - 1) / fov[1]
-    # push!(kg, (-N[2] / 2 : N[2] / 2 - 1) / fov[2])
-    # k1gg = [i for i in kg[1], j in kg[2]]
-    # k2gg = [j for i in kg[1], j in kg[2]]
+    push!(kg, (-N[2] / 2 : N[2] / 2 - 1) / fov[2])
+    ## k1gg = [i for i in kg[1], j in kg[1]]
+    ## k2gg = [i for i in kg[2], j in kg[2]]
     # need to put into one array http://juliamath.github.io/Interpolations.jl/latest/control/#Gridded-interpolation-1
     knots = (kspace[:,1], kspace[:,2])
     itp = interpolate(knots, ydata, Gridded(Linear()))
-    yhat = (itp(i, j) for i in kg, j in kg)
+    yhat = (itp(i, j) for i in kg[1], j in kg[2])
     yhat = collect(yhat)
     yhat[isnan(yhat)] = 0
     
