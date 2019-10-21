@@ -4,7 +4,7 @@
     Description:  Crude "gridding" based on linear interpolation
     Author:       Daniel Wan
     Date Created: 2019-10-01
-    Date Updated: 2019-10-09
+    Date Updated: 2019-10-21
 =#
 
 export mri_grid_linear
@@ -15,7 +15,7 @@ using NFFT
 using MIRT:nufft
 include("mri_objects.jl")
 
-#=
+"""
 function  mri_grid_linear(kspace, ydata, N, fov)
  very crude "gridding" based on linear interpolation.
  not recommended as anything but a straw man | perhaps
@@ -31,9 +31,9 @@ function  mri_grid_linear(kspace, ydata, N, fov)
 	yhat		[N N]	gridding k-space data
 	xg	([N1, 1], [N2, 1])	object-space uniform sample locations
 	kg	([N1, 1], [N2, 1])	k-space uniform sample locations in 1d
+"""
+# Copyright 2019-10-01; Jeff Fessler; University of Michigan
 
-Copyright 2019-10-01; Jeff Fessler; University of Michigan
-=#
 function mri_grid_linear(kspace, ydata, N, fov)
 
     length(N) == 1 && N = [N N] 
