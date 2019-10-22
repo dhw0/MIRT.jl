@@ -12,52 +12,48 @@ export mri_grid_linear
 using Interpolations
 using FFTW
 using NFFT
-using MIRT:nufft
 include("mri_objects.jl")
 
 """
-function  mri_grid_linear(kspace, ydata, N, fov)
+`function  mri_grid_linear(kspace, ydata, N, fov)
  very crude "gridding" based on linear interpolation.
  not recommended as anything but a straw man | perhaps
  for initializing iterative methods.
  in
 	kspace		[M 2]	kx & ky k-space sample locations
-	ydata		[M 1]	complex Fourier sample values
+	ydata		[M]	complex Fourier sample values
 	N			desired image size()
 	fov			field of view()
 		kspace & fov must be in reciprocal units!
  out
 	xhat		[N N]	image estimate
 	yhat		[N N]	gridding k-space data
-	xg	([N1, 1], [N2, 1])	object-space uniform sample locations
-	kg	([N1, 1], [N2, 1])	k-space uniform sample locations in 1d
+	xg	([N1], [N2])	object-space uniform sample locations
+	kg	([N1], [N2])	k-space uniform sample locations in 1d
 """
 # Copyright 2019-10-01; Jeff Fessler; University of Michigan
 
 function mri_grid_linear(kspace, ydata, N, fov)
 
-    length(N) == 1 && N = [N N] 
+    length(N) == 1 && (N = [N N]) 
     length(N) == 2 || error("bad N")
-    length(fov) == 1 && fov = [fov fov]
+    length(fov) == 1 && (fov = [fov fov])
     length(fov) == 2 || error("bad fov")
 
-    kg = (-N[1] / 2 : N[1] / 2 - 1) / fov[1]
+    kg = [(-N[1] / 2 : N[1] / 2 - 1) / fov[1]]
     push!(kg, (-N[2] / 2 : N[2] / 2 - 1) / fov[2])
-    ## k1gg = [i for i in kg[1], j in kg[1]]
-    ## k2gg = [i for i in kg[2], j in kg[2]]
     # need to put into one array http://juliamath.github.io/Interpolations.jl/latest/control/#Gridded-interpolation-1
     knots = (kspace[:,1], kspace[:,2])
     itp = interpolate(knots, ydata, Gridded(Linear()))
-    yhat = (itp(i, j) for i in kg[1], j in kg[2])
-    yhat = collect(yhat)
-    yhat[isnan(yhat)] = 0
-    
-    xg = [(-N[1] / 2 : N[1] / 2 - 1)' / N[1] * fov[1]]
-    push!(xg, (-N[2] / 2 : N[2] / 2 - 1)' / N[2] * fov[2])
+    etp = extrapolate(itp, 0)
+    yhat = [etp(i, j) for i in kg[1], j in kg[2]]
+  
+    xg = [(-N[1] / 2 : N[1] / 2 - 1) / N[1] * fov[1]]
+    push!(xg, (-N[2] / 2 : N[2] / 2 - 1) / N[2] * fov[2])
     dk = 1 ./ fov
     xhat = fftshift(ifft(fftshift(yhat))) * prod(dk) * prod(N)
-    tmp1 = nufft(xg[1] / fov[1])
-    tmp2 = nufft(xg[2] / fov[2])
+    tmp1 = sinc.(xg[1] / fov[1])
+    tmp2 = sinc.(xg[2] / fov[2])
     xhat = xhat ./ (tmp1 * tmp2'); # gridding post-correction for linear interp
     return xhat, yhat, xg, kg
 end
