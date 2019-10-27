@@ -12,6 +12,10 @@ export mri_grid_linear
 using Interpolations
 using FFTW
 using NFFT
+using ImageView
+using Colors
+using Gtk.ShortNames
+using LinearAlgebra
 include("mri_objects.jl")
 
 """
@@ -93,4 +97,16 @@ function mri_grid_linear(test::Symbol)
     im[2, kg[1], kg[2], abs(yhat), "|y_{grid]|"], cbar
     im[3, xg[1], xg[2], abs(xhat), "|x| \"gridding\"", clim], cbar
     =#
+
+    img1 = Gray.(rmul!(xtrue, 1 / maximum(xtrue)))
+    img2 = Gray.(rmul!(abs(yhat), 1 / maximum(abs(yhat))))
+    img3 = Gray.(rmul!(abs(xhat), 1 / maximum(abs(xhat))))
+
+    grid, frames, canvases = canvasgrid((1,3))  # 1 row, 3 columns
+    ImageView.imshow(canvases[1,1], img1)
+    imshow(canvases[1,2], img2)
+    imshow(canvases[1,3], img3)
+    
+    win = Window(grid)
+    Gtk.showall(win)
 end
