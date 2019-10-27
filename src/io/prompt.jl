@@ -26,7 +26,7 @@ function prompt(; gui::Bool=true)
 
 	gui && !Plots.isplotnull() && Plots.gui()
 
-	prompt_state == :prompt && wait_for_key()
+	prompt_state == :prompt && isinteractive() && wait_for_key()
 	return nothing
 
 #=
@@ -58,8 +58,10 @@ function wait_for_key(; prompt::String = "press any key: ", io = stdin)
 	setraw!(raw) = ccall(:jl_tty_set_mode, Int32, (Ptr{Cvoid},Int32), io.handle, raw)
 	print(io, prompt)
 	setraw!(true)
-	read(io, 1)
+	char = read(io, 1)
 	setraw!(false)
+	write(io, char)
+	write(io, "\n")
 	nothing
 end
 
@@ -82,9 +84,11 @@ function prompt(key::Symbol)
 	end
 
 	if key == :test
+		tmp = prompt(:state) # save current state
 		prompt(:draw)
 		@test prompt(:state) == :draw
 		prompt()
+		prompt(tmp) # return to original state
 		return true
 	end
 
