@@ -6,6 +6,8 @@
     Date Created: 2019-10-01
     Date Updated: 2019-10-21
 =#
+# Copyright 2019-10-01; Jeff Fessler; University of Michigan
+
 
 export mri_grid_linear
 
@@ -32,10 +34,8 @@ include("mri_objects.jl")
 	xhat		[N N]	image estimate
 	yhat		[N N]	gridding k-space data
 	xg	([N1], [N2])	object-space uniform sample locations
-	kg	([N1], [N2])	k-space uniform sample locations in 1d
+    kg	([N1], [N2])	k-space uniform sample locations in 1d
 """
-# Copyright 2019-10-01; Jeff Fessler; University of Michigan
-
 function mri_grid_linear(kspace, ydata, N, fov)
 
     length(N) == 1 && (N = [N N]) 
@@ -43,27 +43,34 @@ function mri_grid_linear(kspace, ydata, N, fov)
     length(fov) == 1 && (fov = [fov fov])
     length(fov) == 2 || throw("bad fov")
 
-    kg = [(-N[1] / 2 : N[1] / 2 - 1) / fov[1]]
-    push!(kg, (-N[2] / 2 : N[2] / 2 - 1) / fov[2])
+    kg = [(-N[1] / 2 : N[1] / 2 - 1) / fov[1], 
+          (-N[2] / 2 : N[2] / 2 - 1) / fov[2]]
     # need to put into one array http://juliamath.github.io/Interpolations.jl/latest/control/#Gridded-interpolation-1
     knots = (kspace[:,1], kspace[:,2])
     itp = interpolate(knots, ydata, Gridded(Linear()))
     etp = extrapolate(itp, 0)
     yhat = [etp(i, j) for i in kg[1], j in kg[2]]
   
-    xg = [(-N[1] / 2 : N[1] / 2 - 1) / N[1] * fov[1]]
-    push!(xg, (-N[2] / 2 : N[2] / 2 - 1) / N[2] * fov[2])
+    xg = [(-N[1] / 2 : N[1] / 2 - 1) / N[1] * fov[1], 
+          (-N[2] / 2 : N[2] / 2 - 1) / N[2] * fov[2]]
     dk = 1 ./ fov
     xhat = fftshift(ifft(fftshift(yhat))) * prod(dk) * prod(N)
     tmp1 = sinc.(xg[1] / fov[1])
     tmp2 = sinc.(xg[2] / fov[2])
-    xhat = xhat ./ (tmp1 * tmp2'); # gridding post-correction for linear interp
+    xhat = xhat ./ (tmp1 * tmp2') # gridding post-correction for linear interp
     return xhat, yhat, xg, kg
 end
     
-    #
-    # test function
-    #
+
+"""
+`function  mri_grid_linear(test::Symbol)
+ Test function for mri_grid_linear.
+ Displays three images of uniform data from non-uniform data.
+ in
+	test        Symbol  symbol to indicate test routine
+ out
+    N/A
+"""
 function mri_grid_linear(test::Symbol)
     if (test != :test)
         error("argument must be \":test\" if only one argument is specified")
