@@ -12,10 +12,9 @@ export mri_grid_linear
 using Interpolations
 using FFTW
 using NFFT
-using ImageView
-using Colors
-using Gtk.ShortNames
 using LinearAlgebra
+using MIRT:jim
+using Plots
 include("mri_objects.jl")
 
 """
@@ -40,9 +39,9 @@ include("mri_objects.jl")
 function mri_grid_linear(kspace, ydata, N, fov)
 
     length(N) == 1 && (N = [N N]) 
-    length(N) == 2 || error("bad N")
+    length(N) == 2 || throw("bad N")
     length(fov) == 1 && (fov = [fov fov])
-    length(fov) == 2 || error("bad fov")
+    length(fov) == 2 || throw("bad fov")
 
     kg = [(-N[1] / 2 : N[1] / 2 - 1) / fov[1]]
     push!(kg, (-N[2] / 2 : N[2] / 2 - 1) / fov[2])
@@ -81,9 +80,8 @@ function mri_grid_linear(test::Symbol)
     x1dd = [i for i in x1d, j in x1d]
     x2dd = [j for i in x1d, j in x1d]
 
-    # TODO: find what mri_objects does
     #=
-    obj = mri_objects["case1"]
+    obj = mri_objects("case1")
     xtrue = obj.image(x1dd, x2dd)
     ytrue = obj.kspace[kspace[:,1], kspace[:,2]]
     
@@ -97,16 +95,9 @@ function mri_grid_linear(test::Symbol)
     im[2, kg[1], kg[2], abs(yhat), "|y_{grid]|"], cbar
     im[3, xg[1], xg[2], abs(xhat), "|x| \"gridding\"", clim], cbar
     =#
-
-    img1 = Gray.(rmul!(xtrue, 1 / maximum(xtrue)))
-    img2 = Gray.(rmul!(abs(yhat), 1 / maximum(abs(yhat))))
-    img3 = Gray.(rmul!(abs(xhat), 1 / maximum(abs(xhat))))
-
-    grid, frames, canvases = canvasgrid((1,3))  # 1 row, 3 columns
-    ImageView.imshow(canvases[1,1], img1)
-    imshow(canvases[1,2], img2)
-    imshow(canvases[1,3], img3)
     
-    win = Window(grid)
-    Gtk.showall(win)
+    p1 = jim(xtrue, x = x1d, y = x1d, clim = (0, 2), title = "x true")
+    p2 = jim(abs(yhat), x = kg[1], y = kg[2], title = "|y_{grid]|")
+    p3 = jim(abs(xhat), x = xg[1], y = xg[2], clim = (0, 2), title = "|x| \"gridding\"")
+    plot(p1, p2, p3)
 end
