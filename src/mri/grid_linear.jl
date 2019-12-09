@@ -49,7 +49,7 @@ function mri_grid_linear(kspace, ydata, N, fov)
           (-N[2] / 2 : N[2] / 2 - 1) / fov[2]]
     # need to put into one array http://juliamath.github.io/Interpolations.jl/latest/control/#Gridded-interpolation-1
     # figure out how to interpolate scattered data
-    
+    #=
     yreal = real.(ydata)
     yimag = imag.(ydata)
     yreal = [i for i in yreal, j in yreal]
@@ -60,11 +60,13 @@ function mri_grid_linear(kspace, ydata, N, fov)
     itpreal = interpolate(knots, yreal, Gridded(Linear()))
     itpreal = extrapolate(itpreal, 0)
     yhatr = [itpreal(i, j) for i in kg[1], j in kg[2]]
-
-    
-
-    spl = Spline2D(kspace[:,1], kspace[:,2], ydata, kx = 1, ky = 1, s = 0.0)
-    yhat = evalgrid(spl, kg[1], kg[2])
+    =#
+    y_real = real.(ydata)
+    y_imag = imag.(ydata)
+    spl_real = Spline2D(kspace[:,1], kspace[:,2], y_real, kx = 1, ky = 1, s = 999999999999.0)
+    spl_imag = Spline2D(kspace[:,1], kspace[:,2], y_imag, kx = 1, ky = 1, s = 999999999999.0)
+    # test with f(x,y) = x^2 + y^3
+    yhat = im * evalgrid(spl_imag, kg[1], kg[2]) + evalgrid(spl_real, kg[1], kg[2])
     xg = [(-N[1] / 2 : N[1] / 2 - 1) / N[1] * fov[1], 
           (-N[2] / 2 : N[2] / 2 - 1) / N[2] * fov[2]]
     dk = 1 ./ fov
@@ -74,10 +76,9 @@ function mri_grid_linear(kspace, ydata, N, fov)
     xhat = xhat ./ (tmp1 * tmp2') # gridding post-correction for linear interp
     return xhat, yhat, xg, kg
 end
-    
 
 """
-    function  mri_grid_linear(test::Symbol)
+    mri_grid_linear(test::Symbol)
 
 Test function for mri_grid_linear.
 Displays three images of uniform data from non-uniform data.
@@ -102,15 +103,17 @@ function mri_grid_linear(test::Symbol)
     x1dd = [i for i in x1d, j in x1d]
     x2dd = [j for i in x1d, j in x1d]
 
-    #obj = mri_objects("case1")
-    xtrue = mri_objects_image(mri_objects(:fov, [0], :case1), x1dd, x2dd)
-    ytrue = mri_objects_kspace(mri_objects(:fov, [0], :case1), kspace[:,1], kspace[:,2])
+    obj = mri_objects(:case1)
+    xtrue = obj.image(x1dd, x2dd);
+    ytrue = obj.kspace(kspace[:,1], kspace[:,2]);
+    #xtrue = mri_objects_image(mri_objects(:fov, [0], :case1), x1dd, x2dd)
+    #ytrue = mri_objects_kspace(mri_objects(:fov, [0], :case1), kspace[:,1], kspace[:,2])
     
     Ng = 128
     (xhat, yhat, xg, kg) = mri_grid_linear(kspace, ytrue, Ng, fov)
     
     p1 = jim(xtrue, x = x1d, y = x1d, clim = (0, 2), title = "x true")
-    p2 = jim(abs(yhat), x = kg[1], y = kg[2], title = "|y_{grid]|")
-    p3 = jim(abs(xhat), x = xg[1], y = xg[2], clim = (0, 2), title = "|x| \"gridding\"")
+    p2 = jim(abs.(yhat), x = kg[1], y = kg[2], title = "|y_{grid}|")
+    p3 = jim(abs.(xhat), x = xg[1], y = xg[2], clim = (0, 2), title = "|x| \"gridding\"")
     p = plot(p1, p2, p3)
 end
