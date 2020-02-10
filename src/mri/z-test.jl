@@ -2,6 +2,7 @@
 
 using Test: @test
 
+@test exp_mult(:test)
 @test exp_xform(:test)
 @test image_geom_mri(:test)
 @test ir_mri_coil_compress(:test)
